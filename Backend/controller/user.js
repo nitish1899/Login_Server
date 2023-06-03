@@ -146,9 +146,11 @@ exports.verifyOTP = async (req,res) => {
                 throw new Error ("Invalid OTP passed. Check your inbox");
               } else {
                 // success
-               await User.updateOne({_id: userId}, {verified: true});
+               const user = await User.updateOne({_id: userId}, {verified: true});
                await userOTPverification.deleteMany({userId});
                res.json({
+                name: user[0].name,
+                email: user[0].email,
                 status: "VERIFIED",
                 message: "User email verified successfully",
                });
@@ -177,8 +179,44 @@ exports.resendOTPVerificationCode = async (req,res) => {
     }
   } catch (error) {
       res.json({
-        status:"FAILED",
+        status:"resend OTP failed",
         message: error.message,
       });
+  }
+};
+
+exports.Login = async (req,res) => {
+  try{
+      let {email} =  req.body;
+      if (email == "") {
+        res.json({
+          status: "FAILED",
+          message: "Empty email is not allowed. Please enter the email.",
+        });
+      } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+          res.json({
+            status: "FAILED",
+            message: "invalid email entered",
+        });
+      } else {
+        //checking if user already exists
+        const Result =  await User.find({email})
+         
+        if(Result.length <= 0){
+          res.json({
+            status: "FAILED",
+            message: "User does not exists.",
+          });
+        } else {
+          const _id = Result[0]._id;
+          sendOTPVerificationEmail({_id, email},res);
+        }
+      }
+
+  } catch (error) {
+    res.json({
+      status:"LOGIN FAILED",
+      message: error.message,
+    });
   }
 }

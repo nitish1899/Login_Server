@@ -9,4 +9,6 @@ router.post('/verifyOTP',userController.verifyOTP);
 
 router.post('/resendOTPVerificationCode',userController.resendOTPVerificationCode);
 
+router.post('/login', userController.Login);
+
 module.exports = router;
