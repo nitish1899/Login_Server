@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const userOTPverification = require('../models/userOTPverification');
 const UserOTPverification = require('../models/userOTPverification');
 const bcrypt = require('bcrypt'); 
 
@@ -42,6 +43,7 @@ exports.SignUp = async (req, res) => {
       if (Result.length) {
         // This user already exists
         res.json({
+          Result,
           status: "FAILED",
           message: "User with provided email already exists",
         });
@@ -68,7 +70,7 @@ exports.SignUp = async (req, res) => {
         })
       }
     }
-  } catch(err){
+  } catch (err) {
     console.log(err);
     res.status(500).json({error:err});
   }
@@ -115,3 +117,49 @@ const sendOTPVerificationEmail = async ({_id, email}, res) => {
       });
     }
 };
+
+exports.verifyOTP = async (req,res) => {
+   try{
+        let { userId, otp } = req.body;
+
+        if (!userId || !otp) {
+          throw new Error("Empty otp details are not allowed");
+        } else {
+          const userOTPverificationRecord = await userOTPverification.find({userId});
+          
+          if (userOTPverificationRecord.length <= 0) {
+            throw new Error(`Account details doesn't exist or has been verified already. Please sign up or log in.`)
+          } else {
+            // user otp record exists
+            const { expiresAt} = userOTPverificationRecord[0];
+            const hashedOTP = userOTPverificationRecord[0].otp;
+
+            if (expiresAt < Date.now()) {
+              // user otp record has expired
+              await userOTPverification.deleteMany(userId);
+              throw new Error("OTP has expired . Please request it again.")
+            } else {
+              const validOTP = await bcrypt.compare(otp, hashedOTP);
+
+              if (!validOTP) {
+                // Entered wrong otp
+                throw new Error ("Invalid OTP passed. Check your inbox");
+              } else {
+                // success
+               await User.updateOne({_id: userId}, {verified: true});
+               await userOTPverification.deleteMany({userId});
+               res.json({
+                status: "VERIFIED",
+                message: "User email verified successfully",
+               });
+              }
+            }
+          }
+        }
+   } catch (error) {
+      res.json({
+        status: "FAILED",
+        message: error.message,
+      });
+   }
+}
