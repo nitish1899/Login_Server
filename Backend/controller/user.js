@@ -162,4 +162,23 @@ exports.verifyOTP = async (req,res) => {
         message: error.message,
       });
    }
+};
+
+exports.resendOTPVerificationCode = async (req,res) => {
+  try{
+    let {userId,email} = req.body;
+
+    if(!userId || !email) {
+      throw new Error("Empty user details are not allowed");
+    } else {
+      // delete existing record and resend otp
+      await userOTPverification.deleteMany({userId});
+      sendOTPVerificationEmail({_id:userId,email},res);
+    }
+  } catch (error) {
+      res.json({
+        status:"FAILED",
+        message: error.message,
+      });
+  }
 }
