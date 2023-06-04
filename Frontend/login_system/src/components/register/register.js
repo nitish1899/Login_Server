@@ -25,6 +25,7 @@ const Register = () => {
                 const response = await axios.post("http://localhost:5000/user/signup", user );
                 console.log(response.data);
                 localStorage.setItem('userId',`${response.data.data.userId}`);
+                localStorage.setItem('otpFor', 'signup');
                 window.location.href = '../validateOTP'
             } catch (error) {
                console.log(error.message);

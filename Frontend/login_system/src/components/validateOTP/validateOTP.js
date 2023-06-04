@@ -23,8 +23,20 @@ const ValidateOTP = () => {
         if( otp ) {
             const response = await axios.post("http://localhost:5000/user/verifyOTP",{userId, otp} );
             //console.log(response.data)
-            alert('SignUp Successful');
-            window.location.href = '../login';   
+            const otpFor =  localStorage.getItem('otpFor');
+            const message = response.data;
+            if(otpFor === 'signup'){
+                alert('SignUp Successful');
+                window.location.href = '../login';
+            } else {
+                alert('Login Successful');
+                alert(` 
+                 Name : ${message.name}  
+                 Email : ${message.email} 
+                 Email Status : ${message.status} 
+                `)
+                window.location.href = '../homepage';
+            }
         } else {
             alert('Invalid otp entered')
         }   
