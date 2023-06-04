@@ -146,13 +146,15 @@ exports.verifyOTP = async (req,res) => {
                 throw new Error ("Invalid OTP passed. Check your inbox");
               } else {
                 // success
-               const user = await User.updateOne({_id: userId}, {verified: true});
+               await User.updateOne({_id: userId}, {verified: true});
                await userOTPverification.deleteMany({userId});
+               const user = await User.findOne({_id: userId});
+               console.log(user);
                res.json({
-                name: user[0].name,
-                email: user[0].email,
-                status: "VERIFIED",
-                message: "User email verified successfully",
+                name: user.name,
+                email: user.email,
+                status: "Verified",
+                message: "Successful",
                });
               }
             }
