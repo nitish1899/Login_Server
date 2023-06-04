@@ -1,6 +1,7 @@
 import './App.css';
 import Register from './components/register/register';
 import ValidateOTP from './components/validateOTP/validateOTP';
+import Login from './components/login/login';
 import {BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
         <Routes>
           <Route path="/register" element={< Register />}> </Route>
           <Route path="/validateOTP" element={< ValidateOTP />}> </Route>
+          <Route path="/login" element={< Login />}> </Route>
         </Routes>
       </Router>
     </div>
