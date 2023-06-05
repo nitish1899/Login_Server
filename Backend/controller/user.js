@@ -2,12 +2,17 @@ const User = require('../models/user');
 const userOTPverification = require('../models/userOTPverification');
 const UserOTPverification = require('../models/userOTPverification');
 const bcrypt = require('bcrypt'); 
-
+const jwt = require('jsonwebtoken');
 const  Sib = require('sib-api-v3-sdk');
+
 const transEmailApi = new Sib.TransactionalEmailsApi();
 const client = Sib.ApiClient.instance;
 const apiKey = client.authentications['api-key'];
 apiKey.apiKey = process.env.API_KEY;
+
+function generateAccessToken (userId,email) {
+  return jwt.sign( {userId,email}, process.env.TOKEN_SECRET);
+}
 
 exports.SignUp = async (req, res) => {
   try {
@@ -146,16 +151,23 @@ exports.verifyOTP = async (req,res) => {
                 throw new Error ("Invalid OTP passed. Check your inbox");
               } else {
                 // success
-               await User.updateOne({_id: userId}, {verified: true});
-               await userOTPverification.deleteMany({userId});
                const user = await User.findOne({_id: userId});
-               console.log(user);
-               res.json({
-                name: user.name,
-                email: user.email,
-                status: "Verified",
-                message: "Successful",
-               });
+              //console.log(user);
+
+               if(!user.verified){
+                await User.updateOne({_id: userId}, {verified: true});
+                await userOTPverification.deleteMany({userId});
+                res.json({message: "Signup Successful",})
+               } else {
+                  const token = generateAccessToken(user._id,user.email);
+
+                res.json({
+                  name: user.name,
+                  email: user.email,
+                  status: "Verified",
+                  token:token,
+                });
+               }
               }
             }
           }
