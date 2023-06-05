@@ -1,6 +1,5 @@
 const User = require('../models/user');
 const userOTPverification = require('../models/userOTPverification');
-const UserOTPverification = require('../models/userOTPverification');
 const bcrypt = require('bcrypt'); 
 const jwt = require('jsonwebtoken');
 const  Sib = require('sib-api-v3-sdk');
@@ -54,7 +53,6 @@ exports.SignUp = async (req, res) => {
         });
       } else {
         // Try to create a new user
-
         //password handling
         const saltround = 10;      
         bcrypt.hash(password, saltround, async (err, hash) =>{
@@ -69,7 +67,6 @@ exports.SignUp = async (req, res) => {
             });
 
             const result = await newUser.save();
-            //res.status(201).json({result, message: "Successfully created new user"})
             sendOTPVerificationEmail(result,res);
           }
         })
@@ -130,47 +127,49 @@ exports.verifyOTP = async (req,res) => {
         if (!userId || !otp) {
           throw new Error("Empty otp details are not allowed");
         } else {
-          const userOTPverificationRecord = await userOTPverification.find({userId});
-          
-          if (userOTPverificationRecord.length <= 0) {
-            throw new Error(`Account details doesn't exist or has been verified already. Please sign up or log in.`)
-          } else {
-            // user otp record exists
-            const { expiresAt} = userOTPverificationRecord[0];
-            const hashedOTP = userOTPverificationRecord[0].otp;
-
-            if (expiresAt < Date.now()) {
-              // user otp record has expired
-              await userOTPverification.deleteMany(userId);
-              throw new Error("OTP has expired . Please request it again.")
+            const userOTPverificationRecord = await userOTPverification.find({userId});
+            
+            if (userOTPverificationRecord.length <= 0) {
+              throw new Error(`Account details doesn't exist or has been verified already. 
+              Please sign up or log in.`)
             } else {
-              const validOTP = await bcrypt.compare(otp, hashedOTP);
+                // user otp record exists
+                const { expiresAt} = userOTPverificationRecord[0];
+                const hashedOTP = userOTPverificationRecord[0].otp;
 
-              if (!validOTP) {
-                // Entered wrong otp
-                throw new Error ("Invalid OTP passed. Check your inbox");
-              } else {
-                // success
-               const user = await User.findOne({_id: userId});
-              //console.log(user);
+                if (expiresAt < Date.now()) {
+                  // user otp record has expired
+                  await userOTPverification.deleteMany(userId);
+                  throw new Error("OTP has expired . Please request it again.")
+                } else {
+                  const validOTP = await bcrypt.compare(otp, hashedOTP);
 
-               if(!user.verified){
-                await User.updateOne({_id: userId}, {verified: true});
-                await userOTPverification.deleteMany({userId});
-                res.json({message: "Signup Successful",})
-               } else {
-                  const token = generateAccessToken(user._id,user.email);
+                  if (!validOTP) {
+                    // Entered wrong otp
+                    throw new Error ("Invalid OTP passed. Check your inbox");
+                  } else {
+                    // success
+                    const user = await User.findOne({_id: userId});
+                    //console.log(user);
 
-                res.json({
-                  name: user.name,
-                  email: user.email,
-                  status: "Verified",
-                  token:token,
-                });
-               }
-              }
+                    if(!user.verified){
+                      await User.updateOne({_id: userId}, {verified: true});
+                      await userOTPverification.deleteMany({userId});
+
+                      res.json({message: "Signup Successful",})
+                    } else {
+                        const token = generateAccessToken(user._id,user.email);
+
+                      res.json({
+                        name: user.name,
+                        email: user.email,
+                        status: "Verified",
+                        token:token,
+                      });
+                    }
+                  }
+                }
             }
-          }
         }
    } catch (error) {
       res.json({
